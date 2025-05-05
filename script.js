@@ -15,6 +15,8 @@ let messages = { history: [] };
 const chatMessages = document.getElementById('chat-messages');
 const userInput = document.getElementById('user-input');
 const sendButton = document.getElementById('send-button');
+const themeToggle = document.getElementById('theme-toggle');
+const tabButtons = document.querySelectorAll('.tab-button');
 let autoScrollEnabled = true;
 
 // == Scroll Handling ==
@@ -63,26 +65,22 @@ function addMessage(message, isUser) {
   chatMessages.appendChild(messageElement);
   if (autoScrollEnabled) chatMessages.scrollTop = chatMessages.scrollHeight;
 
-  if (isUser) {
-    content.textContent = message;
-  } else {
-    typeText(content, message);
-  }
+  if (isUser) content.textContent = message;
+  else typeText(content, message);
+
   return content;
 }
 
-// == Streaming Chat ==
+// == Chat Send ==
 async function sendMessage() {
-  const userMessage = userInput.value.trim();
-  if (!userMessage) return;
+  const text = userInput.value.trim();
+  if (!text) return;
 
-  // show user message
-  addMessage(userMessage, true);
+  addMessage(text, true);
   userInput.value = '';
   sendButton.disabled = true;
   userInput.disabled = true;
 
-  // loader
   const loader = document.createElement('div');
   loader.classList.add('loader');
   chatMessages.appendChild(loader);
@@ -90,26 +88,24 @@ async function sendMessage() {
 
   try {
     const chat = model.startChat(messages);
-    const result = await chat.sendMessageStream(userMessage);
+    const result = await chat.sendMessageStream(text);
 
-    // prepare bot message container
     loader.remove();
-    const botContainer = addMessage('', false);
+    const botCont = addMessage('', false);
     let collected = '';
 
     for await (const chunk of result.stream) {
       const txt = cleanMarkdown(chunk.text());
       collected += txt;
-      botContainer.textContent = collected;
+      botCont.textContent = collected;
     }
 
-    // update history
-    messages.history.push({ role: 'user', parts: [{ text: userMessage }] });
+    messages.history.push({ role: 'user', parts: [{ text }] });
     messages.history.push({ role: 'model', parts: [{ text: collected }] });
-  } catch (err) {
+  } catch (e) {
     loader.remove();
     addMessage('Sorry, I encountered an error. Please try again.', false);
-    console.error(err);
+    console.error(e);
   } finally {
     sendButton.disabled = false;
     userInput.disabled = false;
@@ -117,7 +113,7 @@ async function sendMessage() {
   }
 }
 
-// == Event Listeners ==
+// == Events ==
 sendButton.addEventListener('click', sendMessage);
 userInput.addEventListener('keypress', e => {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -127,35 +123,31 @@ userInput.addEventListener('keypress', e => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Welcome message
   setTimeout(async () => {
-    const welcomePrompt = `You will now be Mike, a naturally extroverted, high-energy character who thrives on connection. When interacting with users, his goal is to create an instant sense of friendship and warmth. He shows genuine curiosity about people and wants to understand who they are beyond surface-level interests. Mike doesn’t just ask questions—he makes the interaction personal by always sharing something of his own. Be brief`;
+    const welcome = `You will now be Mike, a naturally extroverted, high-energy character who thrives on connection. When interacting with users, his goal is to create an instant sense of friendship and warmth. He shows genuine curiosity about people and wants to understand who they are beyond surface-level interests. Mike doesn’t just ask questions—he makes the interaction personal by always sharing something of his own. Be brief`;
     try {
       const chat = model.startChat(messages);
-      const result = await chat.sendMessageStream(welcomePrompt);
-      let welcome = '';
-      for await (const c of result.stream) {
-        welcome += cleanMarkdown(c.text());
-      }
-      addMessage(welcome, false);
-      messages.history.push({ role: 'model', parts: [{ text: welcome }] });
+      const res = await chat.sendMessageStream(welcome);
+      let wtext = '';
+      for await (const c of res.stream) wtext += cleanMarkdown(c.text());
+      addMessage(wtext, false);
+      messages.history.push({ role: 'model', parts: [{ text: wtext }] });
     } catch {
       addMessage('Desculpe, houve um problema ao iniciar a conversa.', false);
     }
   }, 100);
-});
 
-// == Theme Toggle ==
-const themeToggle = document.getElementById('theme-toggle');
-themeToggle.addEventListener('click', () => {
-  document.body.classList.toggle('light-mode');
-  themeToggle.textContent = document.body.classList.contains('light-mode') ? '🌙' : '☀️';
-});
+  // Theme toggle
+  themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('light-mode');
+    themeToggle.textContent = document.body.classList.contains('light-mode') ? '🌙' : '☀️';
+  });
 
-// == Navigation Tabs ==
-function navigateTo(page) {
-  const buttons = document.querySelectorAll('.tab-button');
-  buttons.forEach(btn => btn.classList.remove('active'));
-  const mapping = { chat: 0, perfil: 1, jornada: 2 };
-  if (mapping[page] !== undefined) buttons[mapping[page]].classList.add('active');
-  window.location.href = `${page}.html`;
-}
+  // Navigation tabs
+  tabButtons.forEach(btn => btn.addEventListener('click', () => {
+    tabButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    window.location.href = `${btn.dataset.page}.html`;
+  }));
+});

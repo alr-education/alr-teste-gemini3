@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Jornada</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Minha Jornada</h1>
+        </div>
+        <div class="chat-messages">
+            <p style="text-align: center; margin-top: 20px;">Conteúdo da jornada será exibido aqui.</p>
+        </div>
+    </div>
+
+    <div class="tab-bar">
+        <button class="tab-button" onclick="navigateTo('chat')">Chat</button>
+        <button class="tab-button" onclick="navigateTo('perfil')">Meu Perfil</button>
+        <button class="tab-button active" onclick="navigateTo('jornada')">Minha Jornada</button>
+    </div>
+
+    <script>
+        function navigateTo(page) {
+            const pages = {
+                chat: 'index.html',
+                perfil: 'perfil.html',
+                jornada: 'jornada.html'
+            };
+            window.location.href = pages[page];
+        }
+    </script>
+</body>
+</html>
